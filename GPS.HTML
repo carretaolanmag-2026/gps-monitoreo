@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Rastreo Satelital - Control SMS TK303</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+:root{--bg-primary:#060a14;--bg-secondary:#0d1321;--bg-card:#111827;--accent:#1a73e8;--accent-light:#4fc3f7;--accent-glow:rgba(26,115,232,0.3);--accent2:#00e676;--accent3:#ffab00;--danger:#ff1744;--text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;--border:#1e293b;--border-light:#334155;--sidebar-width:260px;--header-height:65px;--radius:14px;--radius-sm:10px;--shadow:0 8px 32px rgba(0,0,0,0.4);--transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden;height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+
+.login-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#060a14 0%,#0d1b3e 50%,#060a14 100%);display:flex;align-items:center;justify-content:center;z-index:10000}
+.login-screen.hidden{display:none}
+.login-container{background:rgba(17,24,39,0.9);backdrop-filter:blur(20px);border:1px solid rgba(26,115,232,0.2);border-radius:20px;padding:40px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:loginAppear 0.6s ease}
+@keyframes loginAppear{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.login-logo{text-align:center;margin-bottom:30px}
+.login-logo-circle{width:100px;height:100px;margin:0 auto 16px;background:linear-gradient(135deg,var(--accent),var(--accent-light));border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(26,115,232,0.4);position:relative}
+.login-logo-circle::before{content:'';position:absolute;width:116px;height:116px;border:2px solid rgba(26,115,232,0.3);border-radius:50%;animation:pulse-ring 2s infinite}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:1}100%{transform:scale(1.3);opacity:0}}
+.login-logo-circle i{font-size:42px;color:white}
+.login-logo h1{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+.login-logo .subtitle{font-size:11px;color:var(--accent-light);letter-spacing:4px;text-transform:uppercase;margin-top:4px;font-weight:600}
+.login-logo .tagline{font-size:10px;color:var(--text-muted);letter-spacing:2px;margin-top:8px}
+.login-form .form-group{margin-bottom:18px}
+.login-form label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.login-form .input-wrapper{position:relative}
+.login-form .input-wrapper i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.login-form input{width:100%;padding:12px 14px 12px 42px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:'Inter',sans-serif;transition:var(--transition)}
+.login-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent-light));border:none;border-radius:var(--radius-sm);color:white;font-size:15px;font-weight:700;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;letter-spacing:1px;margin-top:8px}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(26,115,232,0.4)}
+.login-error{background:rgba(255,23,68,0.1);border:1px solid rgba(255,23,68,0.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--danger);margin-bottom:16px;display:none;align-items:center;gap:8px}
+.login-error.show{display:flex}
+.reset-btn{width:100%;padding:10px;margin-top:12px;background:transparent;border:1px dashed var(--border-light);border-radius:var(--radius-sm);color:var(--text-muted);font-size:11px;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,23,68,0.05)}
+
+.sidebar{position:fixed;left:0;top:0;width:var(--sidebar-width);height:100vh;background:var(--bg-secondary);border-right:1px solid var(--border);z-index:1000;display:flex;flex-direction:column;transition:var(--transition)}
+.sidebar-brand{padding:18px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);min-height:var(--header-height)}
+.brand-logo{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent-light));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:white;box-shadow:0 4px 15px rgba(26,115,232,0.4);flex-shrink:0}
+.brand-text h1{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+.brand-text span{font-size:9px;color:var(--accent-light);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.sidebar-nav{flex:1;padding:14px 10px;overflow-y:auto}
+.nav-section{margin-bottom:20px}
+.nav-section-title{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;padding:0 12px;margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);color:var(--text-secondary);font-size:13px;font-weight:500;position:relative;margin-bottom:2px}
+.nav-item:hover{background:rgba(26,115,232,0.08);color:var(--text-primary)}
+.nav-item.active{background:linear-gradient(135deg,rgba(26,115,232,0.15),rgba(79,195,247,0.1));color:var(--accent-light);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--accent);border-radius:0 3px 3px 0}
+.nav-item i{width:20px;text-align:center;font-size:14px}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border)}
+.user-profile{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition)}
+.user-profile:hover{background:rgba(255,255,255,0.05)}
+.user-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent2),#00c853);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.user-info h4{font-size:13px;font-weight:600}
+.user-info span{font-size:10px;color:var(--text-muted)}
+.logout-btn{margin-top:8px;width:100%;padding:8px;background:rgba(255,23,68,0.1);border:1px solid rgba(255,23,68,0.2);border-radius:var(--radius-sm);color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
+.logout-btn:hover{background:var(--danger);color:white}
+
+.main-content{margin-left:var(--sidebar-width);height:100vh;display:flex;flex-direction:column}
+.header{height:var(--header-height);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-left h2{font-size:17px;font-weight:700}
+.header-left h2 i{color:var(--accent);margin-right:8px}
+.header-right{display:flex;align-items:center;gap:8px}
+.header-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition);position:relative;font-size:14px}
+.header-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(26,115,232,0.1)}
+.live-indicator{display:flex;align-items:center;gap:7px;padding:7px 14px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);border-radius:10px;font-size:11px;font-weight:700;color:var(--accent2)}
+.live-dot{width:7px;height:7px;background:var(--accent2);border-radius:50%;animation:pulse-live 2s infinite}
+@keyframes pulse-live{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,0.4)}50%{opacity:0.7;box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+.gps-status{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.gps-status.denied{background:rgba(255,23,68,0.1);border:1px solid rgba(255,23,68,0.3);color:var(--danger);animation:shake 0.5s ease}
+.gps-status.real{background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);color:var(--accent2)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+.page-content{flex:1;overflow-y:auto;padding:22px 24px}
+.page{display:none}.page.active{display:block}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:var(--transition);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card:nth-child(1)::before{background:linear-gradient(90deg,var(--accent),var(--accent-light))}
+.stat-card:nth-child(2)::before{background:linear-gradient(90deg,var(--accent2),#00c853)}
+.stat-card:nth-child(3)::before{background:linear-gradient(90deg,var(--accent3),#ff6d00)}
+.stat-card:nth-child(4)::before{background:linear-gradient(90deg,var(--danger),#d50000)}
+.stat-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.stat-card:nth-child(1) .stat-icon{background:rgba(26,115,232,0.15);color:var(--accent)}
+.stat-card:nth-child(2) .stat-icon{background:rgba(0,230,118,0.15);color:var(--accent2)}
+.stat-card:nth-child(3) .stat-icon{background:rgba(255,171,0,0.15);color:var(--accent3)}
+.stat-card:nth-child(4) .stat-icon{background:rgba(255,23,68,0.15);color:var(--danger)}
+.stat-value{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:3px}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:500}
+
+.map-section{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:22px;height:420px}
+.map-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:relative}
+#map,#mapFull{width:100%;height:100%}
+.vehicle-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
+.panel-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-header h3{font-size:13px;font-weight:700}
+.panel-header .count{font-size:10px;color:var(--text-muted);background:var(--bg-primary);padding:3px 9px;border-radius:5px;font-weight:600}
+.vehicle-list{flex:1;overflow-y:auto;padding:8px}
+.vehicle-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);margin-bottom:3px}
+.vehicle-item:hover{background:rgba(26,115,232,0.08)}
+.vehicle-item.active{background:rgba(26,115,232,0.15);border:1px solid rgba(26,115,232,0.3)}
+.vehicle-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.vehicle-status-dot.online{background:var(--accent2);box-shadow:0 0 8px rgba(0,230,118,0.5)}
+.vehicle-status-dot.offline{background:var(--text-muted)}
+.vehicle-status-dot.alert{background:var(--danger);box-shadow:0 0 8px rgba(255,23,68,0.5);animation:pulse-live 1.5s infinite}
+.vehicle-status-dot.locked{background:var(--accent3);box-shadow:0 0 8px rgba(255,171,0,0.5)}
+.vehicle-status-dot.not-blocked{background:var(--danger);box-shadow:0 0 8px rgba(255,23,68,0.7);animation:pulse-live 1s infinite}
+.vehicle-info{flex:1;min-width:0}
+.vehicle-info h4{font-size:12px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vehicle-info span{font-size:10px;color:var(--text-muted)}
+.vehicle-speed{text-align:right}
+.vehicle-speed .speed-val{font-size:15px;font-weight:800;color:var(--accent-light)}
+.vehicle-speed .speed-unit{font-size:8px;color:var(--text-muted);font-weight:600}
+
+.action-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;display:none;animation:slideDown 0.3s ease}
+.action-panel.show{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.action-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.action-panel-header .unit-info{display:flex;align-items:center;gap:12px}
+.action-panel-header .unit-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-size:20px;color:white}
+.action-panel-header .unit-details h4{font-size:15px;font-weight:700;margin-bottom:3px}
+.action-panel-header .unit-details p{font-size:11px;color:var(--text-muted)}
+.action-panel-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.action-panel-close:hover{background:rgba(255,23,68,0.15);color:var(--danger);border-color:rgba(255,23,68,0.3)}
+
+.sms-control{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-top:14px}
+.sms-control-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sms-control-header i{font-size:18px;color:var(--accent2)}
+.sms-control-header h5{font-size:13px;font-weight:700}
+.sms-control-header small{font-size:10px;color:var(--text-muted);margin-left:auto}
+.sms-recipient{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg-card);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)}
+.sms-recipient-icon{width:32px;height:32px;border-radius:8px;background:rgba(0,230,118,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:14px}
+.sms-recipient-info{flex:1}
+.sms-recipient-info .label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.sms-recipient-info .number{font-size:14px;font-weight:700;color:var(--text-primary);font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+.sms-command-preview{padding:10px;background:rgba(26,115,232,0.08);border:1px solid rgba(26,115,232,0.2);border-radius:8px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent-light);text-align:center;letter-spacing:1px}
+.sms-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sms-btn{padding:14px 12px;border-radius:10px;border:2px solid;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;align-items:center;gap:8px;font-family:'Inter',sans-serif;background:var(--bg-card)}
+.sms-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.sms-btn i{font-size:22px}
+.sms-btn span{font-size:12px;font-weight:700}
+.sms-btn small{font-size:9px;opacity:0.8}
+.sms-btn.stop{border-color:rgba(255,23,68,0.4);color:var(--danger)}
+.sms-btn.stop:hover{background:rgba(255,23,68,0.1);border-color:var(--danger)}
+.sms-btn.resume{border-color:rgba(0,230,118,0.4);color:var(--accent2)}
+.sms-btn.resume:hover{background:rgba(0,230,118,0.1);border-color:var(--accent2)}
+.sms-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important}
+
+.sms-flow{margin-top:16px;display:none}
+.sms-flow.show{display:block}
+.sms-step{display:flex;gap:14px;padding:12px;border-radius:10px;margin-bottom:8px;background:var(--bg-card);border:1px solid var(--border);animation:stepAppear 0.4s ease;position:relative}
+@keyframes stepAppear{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.sms-step-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.sms-step-icon.sending{background:rgba(26,115,232,0.15);color:var(--accent);animation:spin 1.5s linear infinite}
+.sms-step-icon.sent{background:rgba(0,230,118,0.15);color:var(--accent2)}
+.sms-step-icon.delivered{background:rgba(0,230,118,0.15);color:var(--accent2)}
+.sms-step-icon.received{background:rgba(0,230,118,0.15);color:var(--accent2)}
+.sms-step-icon.failed{background:rgba(255,23,68,0.15);color:var(--danger);animation:pulse-error 1.5s infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-error{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,0.4)}50%{box-shadow:0 0 0 8px rgba(255,23,68,0)}}
+.sms-step-info{flex:1}
+.sms-step-info h5{font-size:12px;font-weight:700;margin-bottom:3px}
+.sms-step-info p{font-size:10px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace}
+.sms-step-time{font-size:9px;color:var(--text-muted);font-family:monospace;white-space:nowrap}
+
+.critical-alert{background:linear-gradient(135deg,rgba(255,23,68,0.12),rgba(213,0,0,0.06));border:2px solid rgba(255,23,68,0.5);border-radius:var(--radius);padding:20px;margin-top:16px;display:none;animation:criticalPulse 2s infinite,shakeError 0.6s ease}
+.critical-alert.show{display:block}
+@keyframes criticalPulse{0%,100%{border-color:rgba(255,23,68,0.5);box-shadow:0 0 0 0 rgba(255,23,68,0.3)}50%{border-color:rgba(255,23,68,0.9);box-shadow:0 0 20px rgba(255,23,68,0.2)}}
+@keyframes shakeError{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.critical-alert-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.critical-alert-icon{width:56px;height:56px;border-radius:14px;background:rgba(255,23,68,0.2);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--danger);flex-shrink:0;animation:pulse-error 1.5s infinite}
+.critical-alert-info h4{font-size:16px;font-weight:800;color:var(--danger);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+.critical-alert-info p{font-size:12px;color:var(--text-secondary);line-height:1.5}
+.critical-alert-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding-top:14px;border-top:1px solid rgba(255,23,68,0.3)}
+.critical-detail{display:flex;flex-direction:column;gap:3px}
+.critical-detail .label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.critical-detail .value{font-size:12px;font-weight:700;color:var(--text-primary)}
+.critical-detail .value.danger{color:var(--danger)}
+.critical-detail .value.warning{color:var(--accent3)}
+.critical-detail .value.success{color:var(--accent2)}
+.critical-alert-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.critical-btn{padding:10px 18px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;border:none}
+.critical-btn.primary{background:linear-gradient(135deg,var(--danger),#d50000);color:white}
+.critical-btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,23,68,0.4)}
+.critical-btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}
+.critical-btn.secondary:hover{border-color:var(--text-muted);color:var(--text-primary)}
+.critical-btn.success{background:linear-gradient(135deg,var(--accent2),#00c853);color:white}
+
+.gps-denied-alert{background:linear-gradient(135deg,rgba(255,171,0,0.1),rgba(255,109,0,0.05));border:2px solid rgba(255,171,0,0.4);border-radius:var(--radius);padding:18px;margin-bottom:18px;display:none;animation:shakeError 0.5s ease}
+.gps-denied-alert.show{display:block}
+.gps-denied-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.gps-denied-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,171,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent3);flex-shrink:0}
+.gps-denied-info h4{font-size:14px;font-weight:700;color:var(--accent3);margin-bottom:3px}
+.gps-denied-info p{font-size:11px;color:var(--text-secondary)}
+.gps-denied-actions{display:flex;gap:8px;margin-top:10px}
+
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.5);animation:slideUp 0.3s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-header h3 i{color:var(--accent);margin-right:8px}
+.modal-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.modal-close:hover{background:rgba(255,23,68,0.15);color:var(--danger);border-color:rgba(255,23,68,0.3)}
+.modal-body{padding:22px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:600;color:var(--text-secondary)}
+.form-group label .required{color:var(--danger)}
+.form-control{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;transition:var(--transition)}
+.form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+select.form-control{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.modal-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.btn{padding:9px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:7px;border:none;font-family:'Inter',sans-serif}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:white;box-shadow:0 4px 15px rgba(26,115,232,0.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(26,115,232,0.4)}
+.btn-secondary{background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(255,23,68,0.15);color:var(--danger);border:1px solid rgba(255,23,68,0.2)}
+.btn-danger:hover{background:var(--danger);color:white}
+.btn-success{background:linear-gradient(135deg,var(--accent2),#00c853);color:white}
+.btn-sm{padding:6px 11px;font-size:11px}
+
+.toast-container{position:fixed;top:18px;right:18px;z-index:3000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:500;animation:slideInRight 0.3s ease,fadeOut 0.3s ease 3.7s forwards;box-shadow:var(--shadow);min-width:280px}
+.toast.success{border-left:3px solid var(--accent2)}
+.toast.error{border-left:3px solid var(--danger)}
+.toast.info{border-left:3px solid var(--accent)}
+.toast.warning{border-left:3px solid var(--accent3)}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(50px)}}
+
+.status-badge{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.status-badge::before{content:'';width:5px;height:5px;border-radius:50%}
+.status-badge.online{background:rgba(0,230,118,0.15);color:var(--accent2)}.status-badge.online::before{background:var(--accent2)}
+.status-badge.offline{background:rgba(100,116,139,0.15);color:var(--text-muted)}.status-badge.offline::before{background:var(--text-muted)}
+.status-badge.alert{background:rgba(255,23,68,0.15);color:var(--danger)}.status-badge.alert::before{background:var(--danger)}
+.status-badge.active{background:rgba(26,115,232,0.15);color:var(--accent)}.status-badge.active::before{background:var(--accent)}
+.status-badge.locked{background:rgba(255,171,0,0.15);color:var(--accent3)}.status-badge.locked::before{background:var(--accent3)}
+.status-badge.not-blocked{background:rgba(255,23,68,0.15);color:var(--danger);animation:pulse-badge 1s infinite}.status-badge.not-blocked::before{background:var(--danger)}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:0.5}}
+
+.action-btns{display:flex;gap:5px}
+.action-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:var(--transition)}
+.action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.action-btn.delete:hover{border-color:var(--danger);color:var(--danger)}
+
+.leaflet-container{background:var(--bg-primary)!important}
+.custom-marker{background:none;border:none}
+.marker-pin{width:28px;height:28px;border-radius:50%;background:var(--accent);border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;position:relative}
+.marker-pin::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--accent)}
+.marker-pin.online{background:var(--accent2)}.marker-pin.online::after{border-top-color:var(--accent2)}
+.marker-pin.alert{background:var(--danger)}.marker-pin.alert::after{border-top-color:var(--danger)}
+.marker-pin.locked{background:var(--accent3)}.marker-pin.locked::after{border-top-color:var(--accent3)}
+.marker-pin.not-blocked{background:var(--danger);animation:pulse-marker 1s infinite}.marker-pin.not-blocked::after{border-top-color:var(--danger)}
+@keyframes pulse-marker{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,0.6)}50%{box-shadow:0 0 0 8px rgba(255,23,68,0)}}
+.leaflet-popup-content-wrapper{background:var(--bg-secondary)!important;color:var(--text-primary)!important;border:1px solid var(--border)!important;border-radius:10px!important}
+.leaflet-popup-tip{background:var(--bg-secondary)!important}
+
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr)}.map-section{grid-template-columns:1fr;height:auto}.map-container{height:320px}.vehicle-panel{height:280px}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.sms-buttons{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+<div class="login-container">
+<div class="login-logo">
+<div class="login-logo-circle"><i class="fas fa-satellite-dish"></i></div>
+<h1>GPS RASTREO</h1>
+<div class="subtitle">SATELITAL</div>
+<div class="tagline">SEGURIDAD • CONTROL • CONFIANZA</div>
+</div>
+<div class="login-error" id="loginError"><i class="fas fa-exclamation-circle"></i><span id="loginErrorMsg">Credenciales incorrectas</span></div>
+<form class="login-form" onsubmit="handleLogin(event)">
+<div class="form-group"><label>Correo Electrónico</label><div class="input-wrapper"><i class="fas fa-envelope"></i><input type="email" id="loginEmail" placeholder="admin@gps.com" required></div></div>
+<div class="form-group"><label>Contraseña</label><div class="input-wrapper"><i class="fas fa-lock"></i><input type="password" id="loginPassword" placeholder="admin123" required></div></div>
+<button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> INGRESAR</button>
+</form>
+<p style="text-align:center;margin-top:18px;font-size:10px;color:var(--text-muted)">
+    <i class="fas fa-info-circle"></i> Admin: <strong>admin@gps.com</strong> / <strong>admin123</strong>
+</p>
+<button class="reset-btn" onclick="resetSystem()">
+    <i class="fas fa-trash-restore"></i> Restablecer sistema (Borrar datos corruptos)
+</button>
+</div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-brand">
+<div class="brand-logo"><i class="fas fa-satellite-dish"></i></div>
+<div class="brand-text"><h1>GPS RASTREO</h1><span>Satelital</span></div>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Principal</div>
+<div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard',this)"><i class="fas fa-th-large"></i>Dashboard</div>
+<div class="nav-item" data-page="mapa" onclick="switchPage('mapa',this)"><i class="fas fa-map-marked-alt"></i>Mapa en Vivo<span style="margin-left:auto;background:var(--accent2);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">LIVE</span></div>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Gestión</div>
+<div class="nav-item" data-page="usuarios" onclick="switchPage('usuarios',this)"><i class="fas fa-users"></i>Usuarios</div>
+<div class="nav-item" data-page="equipos" onclick="switchPage('equipos',this)"><i class="fas fa-microchip"></i>Equipos GPS</div>
+<div class="nav-item" data-page="vehiculos" onclick="switchPage('vehiculos',this)"><i class="fas fa-truck"></i>Vehículos</div>
+<div class="nav-item" data-page="asignaciones" onclick="switchPage('asignaciones',this)"><i class="fas fa-link"></i>Asignaciones</div>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Control SMS</div>
+<div class="nav-item" data-page="sms" onclick="switchPage('sms',this)"><i class="fas fa-sms"></i>Envío SMS TK303</div>
+</div>
+</nav>
+<div class="sidebar-footer">
+<div class="user-profile">
+<div class="user-avatar" id="currentUserAvatar">AD</div>
+<div class="user-info"><h4 id="currentUserName">Administrador</h4><span id="currentUserRole">Admin</span></div>
+</div>
+<button class="logout-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i>Cerrar Sesión</button>
+</div>
+</aside>
+
+<div class="main-content">
+<header class="header">
+<div class="header-left">
+<button class="header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none" id="menuBtn"><i class="fas fa-bars"></i></button>
+<h2 id="pageTitle"><i class="fas fa-th-large"></i>Dashboard</h2>
+</div>
+<div class="header-right">
+<div class="gps-status denied" id="gpsStatus" onclick="requestLocationPermission()">
+<i class="fas fa-exclamation-triangle"></i>
+<span>Permiso de ubicación DENEGADO</span>
+</div>
+<div class="live-indicator"><div class="live-dot"></div>EN VIVO</div>
+<button class="header-btn" onclick="showToast('Sin notificaciones','info')"><i class="fas fa-bell"></i></button>
+</div>
+</header>
+
+<div class="page-content">
+
+<div class="page active" id="page-dashboard">
+<div class="stats-grid" id="statsGrid"></div>
+
+<div class="gps-denied-alert show" id="gpsDeniedAlert">
+<div class="gps-denied-header">
+<div class="gps-denied-icon"><i class="fas fa-map-marker-alt"></i></div>
+<div class="gps-denied-info">
+<h4><i class="fas fa-exclamation-triangle"></i> Permiso de Ubicación Denegado</h4>
+<p>El navegador bloqueó el acceso al GPS. No se puede obtener tu ubicación en tiempo real.</p>
+</div>
+</div>
+<div class="gps-denied-actions">
+<button class="btn btn-warning" onclick="requestLocationPermission()"><i class="fas fa-sync-alt"></i> Solicitar permiso</button>
+<button class="btn btn-secondary" onclick="document.getElementById('gpsDeniedAlert').classList.remove('show')"><i class="fas fa-times"></i> Cerrar</button>
+</div>
+</div>
+
+<div class="action-panel" id="actionPanel">
+<div class="action-panel-header">
+<div class="unit-info">
+<div class="unit-icon"><i class="fas fa-truck"></i></div>
+<div class="unit-details">
+<h4 id="actionPanelName">Selecciona una unidad</h4>
+<p id="actionPanelDetails">Haz clic en una unidad de la lista</p>
+</div>
+</div>
+<button class="action-panel-close" onclick="closeActionPanel()"><i class="fas fa-times"></i></button>
+</div>
+
+<div class="sms-control">
+<div class="sms-control-header">
+<i class="fas fa-sms"></i>
+<h5>Control por SMS - TK303</h5>
+<small>Comando directo al SIM del GPS</small>
+</div>
+
+<div class="sms-recipient">
+<div class="sms-recipient-icon"><i class="fas fa-mobile-alt"></i></div>
+<div class="sms-recipient-info">
+<div class="label">Número SIM del GPS (Destino)</div>
+<div class="number" id="smsTargetNumber">8115452148</div>
+</div>
+<div class="sms-recipient-icon" style="background:rgba(0,230,118,0.15)"><i class="fas fa-signal"></i></div>
+<div class="sms-recipient-info">
+<div class="label">Estado Red</div>
+<div class="number" style="font-size:12px" id="smsNetworkStatus">GPRS Activo</div>
+</div>
+</div>
+
+<div class="sms-command-preview" id="smsCommandPreview">
+Selecciona una acción para ver el comando
+</div>
+
+<div class="sms-buttons">
+<button class="sms-btn stop" id="btnStop" onclick="sendSMS('stop')" disabled>
+<i class="fas fa-stop-circle"></i>
+<span>BLOQUEAR MOTOR</span>
+<small>Enviar: stop123456</small>
+</button>
+<button class="sms-btn resume" id="btnResume" onclick="sendSMS('resume')" disabled>
+<i class="fas fa-play-circle"></i>
+<span>HABILITAR MOTOR</span>
+<small>Enviar: resume123456</small>
+</button>
+</div>
+
+<div class="sms-flow" id="smsFlow"></div>
+
+<div class="critical-alert" id="criticalAlert">
+<div class="critical-alert-header">
+<div class="critical-alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+<div class="critical-alert-info">
+<h4>⚠️ ALERTA: SMS recibido pero unidad NO se bloqueó</h4>
+<p>El TK303 confirmó recepción del comando <strong>stop123456</strong>, pero el relay de corte de motor NO actuó. El vehículo continúa en movimiento.</p>
+</div>
+</div>
+<div class="critical-alert-details">
+<div class="critical-detail"><span class="label">SMS Enviado</span><span class="value success">✅ stop123456</span></div>
+<div class="critical-detail"><span class="label">Destino</span><span class="value">8115452148</span></div>
+<div class="critical-detail"><span class="label">Entrega SMS</span><span class="value success">✅ Entregado</span></div>
+<div class="critical-detail"><span class="label">Respuesta TK303</span><span class="value success">✅ +OK</span></div>
+<div class="critical-detail"><span class="label">Relay Motor</span><span class="value danger">❌ NO ACTUÓ</span></div>
+<div class="critical-detail"><span class="label">Velocidad</span><span class="value danger" id="critSpeed">65 km/h</span></div>
+<div class="critical-detail"><span class="label">Causa</span><span class="value warning" id="critCause">Relay puenteado</span></div>
+<div class="critical-detail"><span class="label">IMEI</span><span class="value" id="critImei">-</span></div>
+</div>
+<div class="critical-alert-actions">
+<button class="critical-btn primary" onclick="sendTechnician()"><i class="fas fa-tools"></i> Enviar técnico</button>
+<button class="critical-btn secondary" onclick="retrySMS()"><i class="fas fa-redo"></i> Reenviar SMS</button>
+<button class="critical-btn success" onclick="sendResumeSMS()"><i class="fas fa-play"></i> Enviar resume</button>
+<button class="critical-btn secondary" onclick="dismissCritical()"><i class="fas fa-times"></i> Descartar</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="map-section">
+<div class="map-container"><div id="map"></div></div>
+<div class="vehicle-panel">
+<div class="panel-header"><h3><i class="fas fa-truck" style="color:var(--accent);margin-right:8px"></i>Mis Unidades</h3><span class="count" id="vehicleCount">0</span></div>
+<div class="vehicle-list" id="vehicleList"></div>
+</div>
+</div>
+</div>
+
+<div class="page" id="page-mapa"><div class="map-container" style="height:calc(100vh - 140px);border-radius:var(--radius)"><div id="mapFull"></div></div></div>
+
+<div class="page" id="page-usuarios">
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+<h3 style="font-size:15px;font-weight:700"><i class="fas fa-users" style="color:var(--accent);margin-right:10px"></i>Gestión de Usuarios</h3>
+<button class="btn btn-primary" onclick="openUserModal()"><i class="fas fa-plus"></i>Nuevo Usuario</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Usuario</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Email</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Rol</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Acciones</th></tr></thead>
+<tbody id="usersTableBody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="page" id="page-equipos">
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+<h3 style="font-size:15px;font-weight:700"><i class="fas fa-microchip" style="color:var(--accent);margin-right:10px"></i>Equipos GPS TK303</h3>
+<button class="btn btn-primary" onclick="openDeviceModal()"><i class="fas fa-plus"></i>Nuevo Equipo</button>
+</div>
+<div style="padding:18px"><div id="deviceGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div></div>
+</div>
+</div>
+
+<div class="page" id="page-vehiculos">
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+<h3 style="font-size:15px;font-weight:700"><i class="fas fa-truck" style="color:var(--accent);margin-right:10px"></i>Vehículos</h3>
+<button class="btn btn-primary" onclick="openVehicleModal()"><i class="fas fa-plus"></i>Nuevo Vehículo</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Vehículo</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Placa</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">GPS</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Motor</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Acciones</th></tr></thead>
+<tbody id="vehiclesTableBody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="page" id="page-asignaciones">
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+<h3 style="font-size:15px;font-weight:700"><i class="fas fa-link" style="color:var(--accent);margin-right:10px"></i>Asignaciones</h3>
+<button class="btn btn-primary" onclick="openAssignModal()"><i class="fas fa-plus"></i>Nueva Asignación</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">GPS</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Vehículo</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Usuario</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Motor</th><th style="padding:11px 18px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)">Acciones</th></tr></thead>
+<tbody id="assignmentsTableBody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="page" id="page-sms">
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+<h3 style="font-size:15px;font-weight:700"><i class="fas fa-sms" style="color:var(--accent2);margin-right:10px"></i>Envío de SMS a TK303</h3>
+<p style="font-size:11px;color:var(--text-muted);margin-top:4px">Envía comandos SMS directamente al número SIM del GPS</p>
+</div>
+<div style="padding:22px">
+<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px"><i class="fas fa-mobile-alt" style="color:var(--accent2);margin-right:5px"></i>NÚMERO DESTINO (SIM GPS)</label>
+<input type="text" class="form-control" id="smsNumber" value="8115452148" style="font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;text-align:center">
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px"><i class="fas fa-truck" style="color:var(--accent);margin-right:5px"></i>UNIDAD ASOCIADA</label>
+<select class="form-control" id="smsUnitSelect" onchange="updateSMSUnit()">
+<option value="">Selecciona unidad</option>
+</select>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+<div style="background:rgba(255,23,68,0.05);border:2px solid rgba(255,23,68,0.3);border-radius:var(--radius);padding:20px;text-align:center">
+<div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Comando de Bloqueo</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;color:var(--danger);letter-spacing:2px;margin-bottom:10px">stop123456</div>
+<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Corta el relay de encendido del motor</div>
+<button class="btn btn-danger" style="width:100%;justify-content:center;padding:12px" onclick="sendSMSFromPage('stop')">
+<i class="fas fa-paper-plane"></i> ENVIAR SMS BLOQUEO
+</button>
+</div>
+<div style="background:rgba(0,230,118,0.05);border:2px solid rgba(0,230,118,0.3);border-radius:var(--radius);padding:20px;text-align:center">
+<div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Comando de Habilitación</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;color:var(--accent2);letter-spacing:2px;margin-bottom:10px">resume123456</div>
+<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Restaura el relay y permite encender</div>
+<button class="btn btn-success" style="width:100%;justify-content:center;padding:12px" onclick="sendSMSFromPage('resume')">
+<i class="fas fa-paper-plane"></i> ENVIAR SMS HABILITAR
+</button>
+</div>
+</div>
+
+<div class="sms-flow show" id="smsFlowPage" style="margin-top:18px">
+<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:'Inter',sans-serif">
+<i class="fas fa-sms" style="font-size:32px;opacity:0.3;margin-bottom:10px;display:block"></i>
+Los SMS enviados aparecerán aquí
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- MODALS (User, Device, Vehicle, Assign) -->
+<div class="modal-overlay" id="userModal">
+<div class="modal">
+<div class="modal-header"><h3 id="userModalTitle"><i class="fas fa-user-plus"></i>Nuevo Usuario</h3><button class="modal-close" onclick="closeModal('userModal')"><i class="fas fa-times"></i></button></div>
+<div class="modal-body">
+<form id="userForm" onsubmit="saveUser(event)">
+<input type="hidden" id="userId">
+<div class="form-grid">
+<div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" class="form-control" id="userName" required></div>
+<div class="form-group"><label>Apellido <span class="required">*</span></label><input type="text" class="form-control" id="userLastName" required></div>
+<div class="form-group full"><label>Email <span class="required">*</span></label><input type="email" class="form-control" id="userEmail" required></div>
+<div class="form-group"><label>Rol <span class="required">*</span></label><select class="form-control" id="userRole" required><option value="">Seleccionar</option><option value="Administrador">Administrador</option><option value="Operador">Operador</option><option value="Supervisor">Supervisor</option><option value="Visualizador">Visualizador</option></select></div>
+<div class="form-group" id="passwordGroup"><label>Contraseña <span class="required">*</span></label><input type="password" class="form-control" id="userPassword"></div>
+</div>
+</form>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('userModal')">Cancelar</button><button class="btn btn-primary" onclick="document.getElementById('userForm').requestSubmit()"><i class="fas fa-save"></i>Guardar</button></div>
+</div>
+</div>
+
+<div class="modal-overlay" id="deviceModal">
+<div class="modal">
+<div class="modal-header"><h3 id="deviceModalTitle"><i class="fas fa-microchip"></i>Equipo TK303</h3><button class="modal-close" onclick="closeModal('deviceModal')"><i class="fas fa-times"></i></button></div>
+<div class="modal-body">
+<form id="deviceForm" onsubmit="saveDevice(event)">
+<input type="hidden" id="deviceId">
+<div class="form-grid">
+<div class="form-group full"><label>IMEI <span class="required">*</span></label><input type="text" class="form-control" id="deviceImei" maxlength="15" pattern="[0-9]{15}" placeholder="15 dígitos" required></div>
+<div class="form-group"><label>Serie</label><input type="text" class="form-control" id="deviceSerial"></div>
+<div class="form-group"><label>Número SIM</label><input type="tel" class="form-control" id="deviceSim" value="8115452148"></div>
+</div>
+</form>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('deviceModal')">Cancelar</button><button class="btn btn-primary" onclick="document.getElementById('deviceForm').requestSubmit()"><i class="fas fa-save"></i>Guardar</button></div>
+</div>
+</div>
+
+<div class="modal-overlay" id="vehicleModal">
+<div class="modal">
+<div class="modal-header"><h3 id="vehicleModalTitle"><i class="fas fa-truck"></i>Vehículo</h3><button class="modal-close" onclick="closeModal('vehicleModal')"><i class="fas fa-times"></i></button></div>
+<div class="modal-body">
+<form id="vehicleForm" onsubmit="saveVehicle(event)">
+<input type="hidden" id="vehicleId">
+<div class="form-grid">
+<div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" class="form-control" id="vehName" required></div>
+<div class="form-group"><label>Placa <span class="required">*</span></label><input type="text" class="form-control" id="vehPlate" required></div>
+<div class="form-group"><label>Marca</label><input type="text" class="form-control" id="vehBrand"></div>
+<div class="form-group"><label>Modelo</label><input type="text" class="form-control" id="vehModel"></div>
+<div class="form-group"><label>Tipo</label><select class="form-control" id="vehType"><option value="Camión">Camión</option><option value="Camioneta">Camioneta</option><option value="Automóvil">Automóvil</option></select></div>
+<div class="form-group"><label>Conductor</label><input type="text" class="form-control" id="vehDriver"></div>
+</div>
+</form>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('vehicleModal')">Cancelar</button><button class="btn btn-primary" onclick="document.getElementById('vehicleForm').requestSubmit()"><i class="fas fa-save"></i>Guardar</button></div>
+</div>
+</div>
+
+<div class="modal-overlay" id="assignModal">
+<div class="modal">
+<div class="modal-header"><h3><i class="fas fa-link"></i>Asignar GPS</h3><button class="modal-close" onclick="closeModal('assignModal')"><i class="fas fa-times"></i></button></div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-group full"><label>Equipo GPS</label><select class="form-control" id="assignDevice"></select></div>
+<div class="form-group full"><label>Vehículo</label><select class="form-control" id="assignVehicle"></select></div>
+<div class="form-group full"><label>Usuario</label><select class="form-control" id="assignUser"></select></div>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('assignModal')">Cancelar</button><button class="btn btn-primary" onclick="saveAssignment()"><i class="fas fa-link"></i>Asignar</button></div>
+</div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DEFAULT_DATA={
+users:[{id:1,name:'Admin',lastName:'Sistema',email:'admin@gps.com',role:'Administrador',status:'Activo',password:'admin123',assignedVehicles:[]},{id:2,name:'Carlos',lastName:'Mendoza',email:'carlos@empresa.com',role:'Operador',status:'Activo',password:'carlos123',assignedVehicles:[1,2]}],
+devices:[
+{id:1,imei:'860123456789012',serial:'TK303-A001',sim:'8115452148',interval:30,status:'Activo',online:true,lat:19.4326,lng:-99.1332,speed:65,battery:95,signal:'Fuerte',vehicleId:1,engineLocked:false,commandReceived:false,unitBlocked:false,relayFailed:false,lastSMS:null},
+{id:2,imei:'860123456789013',serial:'TK303-A002',sim:'8115452149',interval:30,status:'Activo',online:true,lat:19.4450,lng:-99.1500,speed:0,battery:78,signal:'Media',vehicleId:2,engineLocked:false,commandReceived:false,unitBlocked:false,relayFailed:false,lastSMS:null},
+{id:3,imei:'860123456789014',serial:'TK303-A003',sim:'8115452150',interval:60,status:'Activo',online:false,lat:19.4200,lng:-99.1700,speed:0,battery:12,signal:'Débil',vehicleId:3,engineLocked:false,commandReceived:false,unitBlocked:false,relayFailed:false,lastSMS:null}
+],
+vehicles:[
+{id:1,name:'Camión 01',plate:'ABC-1234',brand:'Kenworth',model:'T800/2022',driver:'Juan Pérez',type:'Camión',deviceId:1},
+{id:2,name:'Camioneta 02',plate:'DEF-5678',brand:'Toyota',model:'Hilux/2023',driver:'Pedro López',type:'Camioneta',deviceId:2},
+{id:3,name:'Auto 03',plate:'GHI-9012',brand:'Nissan',model:'Versa/2021',driver:'Ana Ruiz',type:'Automóvil',deviceId:3}
+],
+smsHistory:[],
+nextUserId:3,nextDeviceId:4,nextVehicleId:4
+};
+
+let data={},currentUser=null,selectedDeviceId=null,map,mapFull,markers=[],markersFull=[],smsInProgress=false,locationPermissionDenied=true;
+
+// ROBUST DATA LOADING
+function loadData(){
+    const s = localStorage.getItem('gpsMonitorData');
+    if(s){
+        try{
+            data = JSON.parse(s);
+            // Ensure essential arrays exist to prevent corruption crashes
+            if(!data.users || data.users.length === 0) data.users = DEFAULT_DATA.users;
+            if(!data.devices) data.devices = DEFAULT_DATA.devices;
+            if(!data.vehicles) data.vehicles = DEFAULT_DATA.vehicles;
+            if(!data.smsHistory) data.smsHistory = [];
+        }catch(e){
+            console.error("Error loading data, resetting to default", e);
+            data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+    }else{
+        data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+}
+
+function saveAllData(){localStorage.setItem('gpsMonitorData',JSON.stringify(data))}
+
+// RESET SYSTEM FUNCTION
+function resetSystem() {
+    if(confirm('⚠️ ¿Estás seguro de restablecer el sistema a su estado original?\n\nSe borrarán todos los datos guardados y se restaurarán las credenciales de administrador:\n\nUsuario: admin@gps.com\nContraseña: admin123')) {
+        localStorage.removeItem('gpsMonitorData');
+        location.reload();
+    }
+}
+
+function handleLogin(e){
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    
+    // Force reload of default data if users array is missing/corrupted
+    if (!data || !data.users || data.users.length === 0) {
+        data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+    
+    const user = data.users.find(u => u.email === email && u.password === password && u.status === 'Activo');
+    
+    if(user){
+        currentUser = user;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('currentUserName').textContent = user.name + ' ' + user.lastName;
+        document.getElementById('currentUserRole').textContent = user.role;
+        document.getElementById('currentUserAvatar').textContent = user.name[0] + user.lastName[0];
+        initApp();
+        showToast(`Bienvenido ${user.name}`,'success');
+        setTimeout(()=>{showLocationDenied()},1500);
+    } else {
+        document.getElementById('loginError').classList.add('show');
+        document.getElementById('loginErrorMsg').textContent = 'Credenciales incorrectas. Usa: admin@gps.com / admin123';
+    }
+}
+
+function handleLogout(){
+    currentUser = null;
+    selectedDeviceId = null;
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').classList.remove('show');
+}
+
+function initApp(){initMaps();renderAll();updateSMSUnitSelect()}
+function renderAll(){renderStats();renderVehicleList();renderUsers();renderDevices();renderVehicles();renderAssignments();updateMapMarkers()}
+
+function showLocationDenied(){
+    locationPermissionDenied=true;
+    const status=document.getElementById('gpsStatus');
+    status.className='gps-status denied';
+    status.innerHTML='<i class="fas fa-exclamation-triangle"></i><span>Permiso de ubicación DENEGADO</span>';
+    document.getElementById('gpsDeniedAlert').classList.add('show');
+    showToast('❌ Permiso de ubicación denegado','error');
+}
+
+function requestLocationPermission(){
+    showToast('Solicitando permiso...','info');
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(
+            (pos)=>{
+                locationPermissionDenied=false;
+                const status=document.getElementById('gpsStatus');
+                status.className='gps-status real';
+                status.innerHTML='<i class="fas fa-satellite"></i><span>GPS REAL activo</span>';
+                document.getElementById('gpsDeniedAlert').classList.remove('show');
+                showToast('✅ Permiso concedido','success');
+            },
+            (err)=>{showLocationDenied()},
+            {timeout:5000}
+        );
+    }else{showLocationDenied()}
+}
+
+function initMaps(){
+    map=L.map('map',{zoomControl:false,attributionControl:false}).setView([19.4326,-99.1332],13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+    setTimeout(()=>{
+        mapFull=L.map('mapFull',{zoomControl:true,attributionControl:false}).setView([19.4326,-99.1332],13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapFull);
+        updateMapMarkers();
+    },100);
+}
+
+function createCustomIcon(device){
+    let statusClass='online';
+    if(device.relayFailed)statusClass='not-blocked';
+    else if(device.engineLocked)statusClass='locked';
+    else if(!device.online)statusClass='offline';
+    else if(device.speed>80)statusClass='alert';
+    let icon=device.relayFailed?'fa-exclamation-triangle':(device.engineLocked?'fa-lock':'fa-truck');
+    return L.divIcon({className:'custom-marker',html:`<div class="marker-pin ${statusClass}"><i class="fas ${icon}" style="font-size:10px"></i></div>`,iconSize:[28,36],iconAnchor:[14,36],popupAnchor:[0,-38]});
+}
+
+function updateMapMarkers(){
+    markers.forEach(m=>map&&map.removeLayer(m));
+    markersFull.forEach(m=>mapFull&&mapFull.removeLayer(m));
+    markers=[];markersFull=[];
+    data.devices.forEach(d=>{
+        if(d.lat&&d.lng){
+            const icon=createCustomIcon(d);
+            const vehicle=data.vehicles.find(v=>v.id===d.vehicleId);
+            let engineStatus=d.engineLocked?'<span style="color:#ffab00;font-weight:700">🔒 COMANDO BLOQUEO ENVIADO</span>':'<span style="color:#00e676;font-weight:700">🔓 MOTOR HABILITADO</span>';
+            if(d.relayFailed)engineStatus='<span style="color:#ff1744;font-weight:700">⚠️ RELAY FALLÓ - Motor sigue encendido</span>';
+            const lastSMS=d.lastSMS?`<div style="font-size:10px;color:#4fc3f7;margin-top:4px">📱 Último SMS: ${d.lastSMS}</div>`:'';
+            const popupContent=`<div style="font-family:Inter,sans-serif;min-width:220px;color:#f1f5f9"><strong style="font-size:13px">${vehicle?vehicle.name:'Sin asignar'}</strong>${vehicle?`<div style="font-size:10px;color:#94a3b8">Placa: ${vehicle.plate}</div>`:''}<div style="font-size:10px;color:#64748b">IMEI: ${d.imei}</div><div style="font-size:10px;color:#64748b">SIM: ${d.sim}</div><hr style="border:none;border-top:1px solid #334155;margin:6px 0">${engineStatus}${lastSMS}<hr style="border:none;border-top:1px solid #334155;margin:6px 0"><div style="font-size:11px">⚡ ${d.speed} km/h | 🔋 ${d.battery}% | 📡 ${d.signal}</div>${d.relayFailed?'<div style="font-size:10px;color:#ff1744;font-weight:700;margin-top:6px">❌ La unidad NO se detuvo</div>':''}</div>`;
+            if(map){const m1=L.marker([d.lat,d.lng],{icon}).bindPopup(popupContent).addTo(map);markers.push(m1)}
+            if(mapFull){const m2=L.marker([d.lat,d.lng],{icon}).bindPopup(popupContent).addTo(mapFull);markersFull.push(m2)}
+        }
+    });
+}
+
+function switchPage(pageId,navItem){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+pageId).classList.add('active');
+    if(navItem)navItem.classList.add('active');
+    const titles={dashboard:'<i class="fas fa-th-large"></i>Dashboard',mapa:'<i class="fas fa-map-marked-alt"></i>Mapa en Vivo',usuarios:'<i class="fas fa-users"></i>Usuarios',equipos:'<i class="fas fa-microchip"></i>Equipos GPS',vehiculos:'<i class="fas fa-truck"></i>Vehículos',asignaciones:'<i class="fas fa-link"></i>Asignaciones',sms:'<i class="fas fa-sms"></i>Envío SMS TK303'};
+    document.getElementById('pageTitle').innerHTML=titles[pageId]||'';
+    if(pageId==='mapa'&&mapFull)setTimeout(()=>mapFull.invalidateSize(),200);
+    if(pageId==='dashboard'&&map)setTimeout(()=>map.invalidateSize(),200);
+    if(pageId==='sms')updateSMSUnitSelect();
+}
+
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',(e)=>{if(e.target===o)o.classList.remove('show')})});
+
+function showToast(message,type='success'){
+    const container=document.getElementById('toastContainer');
+    const icons={success:'fa-check-circle',error:'fa-times-circle',info:'fa-info-circle',warning:'fa-exclamation-triangle'};
+    const toast=document.createElement('div');
+    toast.className=`toast ${type}`;
+    toast.innerHTML=`<i class="fas ${icons[type]}" style="font-size:15px"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(()=>toast.remove(),4000);
+}
+
+function selectUnit(deviceId){
+    selectedDeviceId=deviceId;
+    const device=data.devices.find(d=>d.id===deviceId);
+    if(!device)return;
+    const vehicle=data.vehicles.find(v=>v.id===device.vehicleId);
+    document.getElementById('actionPanelName').textContent=vehicle?vehicle.name:'Sin asignar';
+    document.getElementById('actionPanelDetails').textContent=`${vehicle?vehicle.plate+' | ':''}IMEI: ${device.imei} | SIM: ${device.sim} | ${device.online?'En línea':'Offline'}`;
+    document.getElementById('smsTargetNumber').textContent=device.sim||'8115452148';
+    document.getElementById('actionPanel').classList.add('show');
+    document.querySelectorAll('.vehicle-item').forEach(item=>item.classList.remove('active'));
+    const sel=document.querySelector(`[data-device-id="${deviceId}"]`);
+    if(sel)sel.classList.add('active');
+    if(map&&device.lat&&device.lng)map.setView([device.lat,device.lng],15,{animate:true});
+
+    document.getElementById('btnStop').disabled=false;
+    document.getElementById('btnResume').disabled=false;
+    updateCommandPreview(null);
+    document.getElementById('criticalAlert').classList.remove('show');
+    document.getElementById('smsFlow').classList.remove('show');
+    document.getElementById('smsFlow').innerHTML='';
+}
+
+function closeActionPanel(){document.getElementById('actionPanel').classList.remove('show');selectedDeviceId=null;document.querySelectorAll('.vehicle-item').forEach(i=>i.classList.remove('active'))}
+
+function updateCommandPreview(type){
+    const preview=document.getElementById('smsCommandPreview');
+    const num = document.getElementById('smsTargetNumber').textContent;
+    if(!type){preview.textContent='Selecciona una acción para ver el comando';preview.style.color='var(--accent-light)';return}
+    if(type==='stop'){preview.innerHTML=`📱 Enviando a <strong>${num}</strong>: <span style="color:var(--danger);font-weight:800">stop123456</span>`;preview.style.borderColor='rgba(255,23,68,0.4)';preview.style.background='rgba(255,23,68,0.08)'}
+    else if(type==='resume'){preview.innerHTML=`📱 Enviando a <strong>${num}</strong>: <span style="color:var(--accent2);font-weight:800">resume123456</span>`;preview.style.borderColor='rgba(0,230,118,0.4)';preview.style.background='rgba(0,230,118,0.08)'}
+}
+
+function sendSMS(type){
+    if(!selectedDeviceId||smsInProgress)return;
+    const device=data.devices.find(d=>d.id===selectedDeviceId);
+    if(!device)return;
+
+    smsInProgress=true;
+    document.getElementById('btnStop').disabled=true;
+    document.getElementById('btnResume').disabled=true;
+
+    const vehicle=data.vehicles.find(v=>v.id===device.vehicleId);
+    const command=type==='stop'?'stop123456':'resume123456';
+    const targetNumber=device.sim||'8115452148';
+
+    updateCommandPreview(type);
+
+    const flow=document.getElementById('smsFlow');
+    flow.classList.add('show');
+    flow.innerHTML='';
+
+    addSMSStep(flow,'sending','Preparando SMS...',`Destino: ${targetNumber} | Comando: ${command}`);
+
+    setTimeout(()=>{
+        addSMSStep(flow,'sent','✅ SMS enviado desde el servidor',`Mensaje "${command}" transmitido a ${targetNumber}`);
+        setTimeout(()=>{
+            addSMSStep(flow,'delivered','📲 SMS entregado al dispositivo',`Operador confirmó entrega en red celular`);
+            setTimeout(()=>{
+                addSMSStep(flow,'received',`✅ TK303 recibió "${command}"`,`El GPS respondió: +OK`);
+                device.commandReceived=true;
+                device.lastSMS=command;
+
+                setTimeout(()=>{
+                    if(type==='stop'){
+                        addSMSStep(flow,'failed','⚠️ La unidad NO se bloqueó','El relay de corte NO actuó. Vehículo sigue en movimiento.',true);
+                        device.relayFailed=true;
+                        device.engineLocked=true;
+
+                        document.getElementById('critSpeed').textContent=device.speed+' km/h';
+                        document.getElementById('critImei').textContent=device.imei;
+                        const causes=['Relay puenteado por conductor','Cableado del relay incorrecto','Relay dañado o en corto','Fusible del relay fundido','Conexión al encendido mal hecha'];
+                        document.getElementById('critCause').textContent=causes[Math.floor(Math.random()*causes.length)];
+                        document.getElementById('criticalAlert').classList.add('show');
+
+                        data.smsHistory.unshift({time:new Date(),type:'stop',command:'stop123456',number:targetNumber,imei:device.imei,vehicle:vehicle?vehicle.name:'?',status:'Recibido pero relay falló',response:'+OK (relay no actuó)'});
+                    }else{
+                        addSMSStep(flow,'received','✅ Unidad habilitada correctamente','El relay se activó. Motor puede encender.');
+                        device.engineLocked=false;
+                        device.relayFailed=false;
+                        device.commandReceived=false;
+                        data.smsHistory.unshift({time:new Date(),type:'resume',command:'resume123456',number:targetNumber,imei:device.imei,vehicle:vehicle?vehicle.name:'?',status:'Exitoso',response:'+OK'});
+                    }
+
+                    updateMapMarkers();renderVehicleList();renderStats();renderVehicles();renderAssignments();saveAllData();
+                    smsInProgress=false;
+                    document.getElementById('btnStop').disabled=false;
+                    document.getElementById('btnResume').disabled=false;
+
+                    if(type==='stop') showToast('⚠️ CRÍTICO: SMS recibido pero unidad NO se bloqueó','error');
+                    else showToast('✅ SMS resume123456 enviado y unidad habilitada','success');
+                },2000);
+            },1800);
+        },1500);
+    },1200);
+}
+
+function addSMSStep(flow,type,title,desc,isError=false){
+    const step=document.createElement('div');
+    step.className='sms-step';
+    const iconMap={sending:'fa-satellite-dish',sent:'fa-paper-plane',delivered:'fa-mobile-alt',received:'fa-check-circle',failed:'fa-exclamation-triangle'};
+    step.innerHTML=`<div class="sms-step-icon ${type}"><i class="fas ${iconMap[type]}"></i></div><div class="sms-step-info"><h5>${title}</h5><p>${desc}</p></div><div class="sms-step-time">${new Date().toLocaleTimeString()}</div>`;
+    flow.appendChild(step);
+}
+
+function retrySMS(){if(!selectedDeviceId)return;document.getElementById('criticalAlert').classList.remove('show');document.getElementById('smsFlow').innerHTML='';sendSMS('stop')}
+function sendResumeSMS(){if(!selectedDeviceId)return;document.getElementById('criticalAlert').classList.remove('show');document.getElementById('smsFlow').innerHTML='';sendSMS('resume')}
+function sendTechnician(){showToast('🔧 Técnico enviado a la ubicación de la unidad','warning');dismissCritical()}
+function dismissCritical(){document.getElementById('criticalAlert').classList.remove('show')}
+
+function sendSMSFromPage(type){
+    const number=document.getElementById('smsNumber').value.trim();
+    const unitId=parseInt(document.getElementById('smsUnitSelect').value);
+    if(!number){showToast('Ingresa el número destino','warning');return}
+    let device=null;
+    if(unitId) device=data.devices.find(d=>d.id===unitId);
+    else device=data.devices.find(d=>d.sim===number);
+    
+    if(!device){showToast('No se encontró dispositivo con ese número','error');return}
+    selectUnit(device.id);
+    switchPage('dashboard',document.querySelector('[data-page=dashboard]'));
+    setTimeout(()=>{sendSMS(type)},500);
+}
+
+function updateSMSUnitSelect(){
+    const select=document.getElementById('smsUnitSelect');
+    if(!select)return;
+    select.innerHTML='<option value="">Selecciona unidad</option>'+data.devices.map(d=>{
+        const v=data.vehicles.find(x=>x.id===d.vehicleId);
+        return`<option value="${d.id}">${v?v.name:'Sin asignar'} | SIM: ${d.sim} | IMEI: ${d.imei}</option>`;
+    }).join('');
+}
+
+function updateSMSUnit(){
+    const unitId=parseInt(document.getElementById('smsUnitSelect').value);
+    if(!unitId)return;
+    const device=data.devices.find(d=>d.id===unitId);
+    if(device) document.getElementById('smsNumber').value=device.sim||'8115452148';
+}
+
+// CRUD Functions
+function openUserModal(userId=null){
+    document.getElementById('userForm').reset();document.getElementById('userId').value='';
+    if(userId){
+        const user=data.users.find(u=>u.id===userId);if(!user)return;
+        document.getElementById('userModalTitle').innerHTML='<i class="fas fa-user-edit"></i>Editar Usuario';
+        document.getElementById('userId').value=user.id;document.getElementById('userName').value=user.name;
+        document.getElementById('userLastName').value=user.lastName;document.getElementById('userEmail').value=user.email;
+        document.getElementById('userRole').value=user.role;document.getElementById('passwordGroup').style.display='none';
+    }else{document.getElementById('userModalTitle').innerHTML='<i class="fas fa-user-plus"></i>Nuevo Usuario';document.getElementById('passwordGroup').style.display='block'}
+    openModal('userModal');
+}
+
+function saveUser(e){
+    e.preventDefault();const editId=document.getElementById('userId').value;
+    if(editId){
+        const user=data.users.find(u=>u.id===parseInt(editId));
+        if(user){user.name=document.getElementById('userName').value;user.lastName=document.getElementById('userLastName').value;user.email=document.getElementById('userEmail').value;user.role=document.getElementById('userRole').value;showToast('Usuario actualizado','success')}
+    }else{
+        const email=document.getElementById('userEmail').value;
+        if(data.users.find(u=>u.email===email)){showToast('Email ya existe','error');return}
+        const user={id:data.nextUserId++,name:document.getElementById('userName').value,lastName:document.getElementById('userLastName').value,email,role:document.getElementById('userRole').value,status:'Activo',password:document.getElementById('userPassword').value,assignedVehicles:[]};
+        data.users.push(user);showToast(`Usuario "${user.name}" creado`,'success');
+    }
+    closeModal('userModal');renderUsers();saveAllData();
+}
+function deleteUser(id){if(!confirm('¿Eliminar usuario?'))return;data.users=data.users.filter(u=>u.id!==id);renderUsers();saveAllData();showToast('Usuario eliminado','error')}
+
+function openDeviceModal(deviceId=null){
+    document.getElementById('deviceForm').reset();document.getElementById('deviceId').value='';
+    if(deviceId){
+        const device=data.devices.find(d=>d.id===deviceId);if(!device)return;
+        document.getElementById('deviceModalTitle').innerHTML='<i class="fas fa-microchip"></i>Editar TK303';
+        document.getElementById('deviceId').value=device.id;document.getElementById('deviceImei').value=device.imei;
+        document.getElementById('deviceSerial').value=device.serial||'';document.getElementById('deviceSim').value=device.sim||'8115452148';
+    }else{document.getElementById('deviceModalTitle').innerHTML='<i class="fas fa-microchip"></i>Nuevo TK303'}
+    openModal('deviceModal');
+}
+
+function saveDevice(e){
+    e.preventDefault();const editId=document.getElementById('deviceId').value;const imei=document.getElementById('deviceImei').value;
+    if(editId){
+        const device=data.devices.find(d=>d.id===parseInt(editId));
+        if(device){device.imei=imei;device.serial=document.getElementById('deviceSerial').value;device.sim=document.getElementById('deviceSim').value;showToast('Equipo actualizado','success')}
+    }else{
+        if(data.devices.find(d=>d.imei===imei)){showToast('IMEI duplicado','error');return}
+        const device={id:data.nextDeviceId++,imei,serial:document.getElementById('deviceSerial').value||'N/A',sim:document.getElementById('deviceSim').value||'8115452148',interval:30,status:'Activo',online:false,lat:19.4326+(Math.random()-0.5)*0.05,lng:-99.1332+(Math.random()-0.5)*0.05,speed:0,battery:100,signal:'N/A',vehicleId:null,engineLocked:false,commandReceived:false,unitBlocked:false,relayFailed:false,lastSMS:null};
+        data.devices.push(device);showToast(`TK303 registrado: ${imei}`,'success');
+    }
+    closeModal('deviceModal');renderDevices();renderStats();updateMapMarkers();renderVehicleList();updateSMSUnitSelect();saveAllData();
+}
+function deleteDevice(id){if(!confirm('¿Eliminar equipo?'))return;const d=data.devices.find(x=>x.id===id);if(d&&d.vehicleId){const v=data.vehicles.find(x=>x.id===d.vehicleId);if(v)v.deviceId=null}data.devices=data.devices.filter(x=>x.id!==id);renderDevices();renderStats();updateMapMarkers();renderVehicleList();updateSMSUnitSelect();saveAllData();showToast('Equipo eliminado','error')}
+
+function openVehicleModal(vehicleId=null){
+    document.getElementById('vehicleForm').reset();document.getElementById('vehicleId').value='';
+    if(vehicleId){
+        const v=data.vehicles.find(x=>x.id===vehicleId);if(!v)return;
+        document.getElementById('vehicleModalTitle').innerHTML='<i class="fas fa-truck"></i>Editar Vehículo';
+        document.getElementById('vehicleId').value=v.id;document.getElementById('vehName').value=v.name;
+        document.getElementById('vehPlate').value=v.plate;document.getElementById('vehBrand').value=v.brand||'';
+        document.getElementById('vehModel').value=v.model||'';document.getElementById('vehType').value=v.type;
+        document.getElementById('vehDriver').value=v.driver||'';
+    }else{document.getElementById('vehicleModalTitle').innerHTML='<i class="fas fa-truck"></i>Nuevo Vehículo'}
+    openModal('vehicleModal');
+}
+
+function saveVehicle(e){
+    e.preventDefault();const editId=document.getElementById('vehicleId').value;
+    if(editId){
+        const v=data.vehicles.find(x=>x.id===parseInt(editId));
+        if(v){v.name=document.getElementById('vehName').value;v.plate=document.getElementById('vehPlate').value;v.brand=document.getElementById('vehBrand').value;v.model=document.getElementById('vehModel').value;v.type=document.getElementById('vehType').value;v.driver=document.getElementById('vehDriver').value;showToast('Vehículo actualizado','success')}
+    }else{
+        const v={id:data.nextVehicleId++,name:document.getElementById('vehName').value,plate:document.getElementById('vehPlate').value,brand:document.getElementById('vehBrand').value||'N/A',model:document.getElementById('vehModel').value||'N/A',driver:document.getElementById('vehDriver').value||'Sin asignar',type:document.getElementById('vehType').value,deviceId:null};
+        data.vehicles.push(v);showToast(`Vehículo "${v.name}" registrado`,'success');
+    }
+    closeModal('vehicleModal');renderVehicles();renderAssignments();saveAllData();
+}
+function deleteVehicle(id){if(!confirm('¿Eliminar vehículo?'))return;const v=data.vehicles.find(x=>x.id===id);if(v&&v.deviceId){const d=data.devices.find(x=>x.id===v.deviceId);if(d)d.vehicleId=null}data.vehicles=data.vehicles.filter(x=>x.id!==id);renderVehicles();renderAssignments();saveAllData();showToast('Vehículo eliminado','error')}
+
+function openAssignModal(){
+    const unassignedDevices=data.devices.filter(d=>!d.vehicleId);
+    const unassignedVehicles=data.vehicles.filter(v=>!v.deviceId);
+    document.getElementById('assignDevice').innerHTML='<option value="">-- GPS --</option>'+unassignedDevices.map(d=>`<option value="${d.id}">IMEI: ${d.imei} | SIM: ${d.sim}</option>`).join('');
+    document.getElementById('assignVehicle').innerHTML='<option value="">-- Vehículo --</option>'+unassignedVehicles.map(v=>`<option value="${v.id}">${v.name} | ${v.plate}</option>`).join('');
+    document.getElementById('assignUser').innerHTML='<option value="">-- Usuario --</option>'+data.users.filter(u=>u.status==='Activo').map(u=>`<option value="${u.id}">${u.name} ${u.lastName}</option>`).join('');
+    openModal('assignModal');
+}
+
+function saveAssignment(){
+    const deviceId=parseInt(document.getElementById('assignDevice').value);
+    const vehicleId=parseInt(document.getElementById('assignVehicle').value);
+    const userId=parseInt(document.getElementById('assignUser').value);
+    if(!deviceId||!vehicleId||!userId){showToast('Completa todos los campos','error');return}
+    const device=data.devices.find(d=>d.id===deviceId);
+    const vehicle=data.vehicles.find(v=>v.id===vehicleId);
+    const user=data.users.find(u=>u.id===userId);
+    device.vehicleId=vehicleId;vehicle.deviceId=deviceId;
+    if(!user.assignedVehicles)user.assignedVehicles=[];
+    if(!user.assignedVehicles.includes(vehicleId))user.assignedVehicles.push(vehicleId);
+    closeModal('assignModal');renderDevices();renderVehicles();renderAssignments();renderVehicleList();updateMapMarkers();renderStats();saveAllData();
+    showToast(`✅ GPS asignado a ${vehicle.name}`,'success');
+}
+
+function unassignDevice(deviceId){
+    const device=data.devices.find(d=>d.id===deviceId);
+    if(!device||!device.vehicleId)return;
+    const vehicle=data.vehicles.find(v=>v.id===device.vehicleId);
+    data.users.forEach(u=>{if(u.assignedVehicles)u.assignedVehicles=u.assignedVehicles.filter(vid=>vid!==device.vehicleId)});
+    if(vehicle)vehicle.deviceId=null;
+    device.vehicleId=null;device.engineLocked=false;device.relayFailed=false;
+    renderDevices();renderVehicles();renderAssignments();renderVehicleList();updateMapMarkers();renderStats();saveAllData();
+    showToast('Asignación removida','info');
+}
+
+function renderStats(){
+    const stats=[
+        {icon:'fa-satellite-dish',value:data.devices.length,label:'Equipos GPS'},
+        {icon:'fa-wifi',value:data.devices.filter(d=>d.online).length,label:'En Línea'},
+        {icon:'fa-exclamation-triangle',value:data.devices.filter(d=>d.relayFailed).length,label:'Relay Fallido'},
+        {icon:'fa-sms',value:data.smsHistory?data.smsHistory.length:0,label:'SMS Enviados'}
+    ];
+    document.getElementById('statsGrid').innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-header"><div class="stat-icon"><i class="fas ${s.icon}"></i></div></div><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
+}
+
+function renderVehicleList(){
+    const list=document.getElementById('vehicleList');
+    document.getElementById('vehicleCount').textContent=data.devices.length+' unidades';
+    list.innerHTML=data.devices.map(d=>{
+        const v=data.vehicles.find(x=>x.id===d.vehicleId);
+        let statusClass=d.online?(d.speed>80?'alert':'online'):'offline';
+        if(d.relayFailed)statusClass='not-blocked';
+        else if(d.engineLocked)statusClass='locked';
+        const lockIcon=d.relayFailed?'<i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-left:3px;font-size:8px" title="Relay falló"></i>':(d.engineLocked?'<i class="fas fa-lock" style="color:var(--accent3);margin-left:3px;font-size:8px"></i>':'');
+        return`<div class="vehicle-item ${selectedDeviceId===d.id?'active':''}" data-device-id="${d.id}" onclick="selectUnit(${d.id})"><div class="vehicle-status-dot ${statusClass}"></div><div class="vehicle-info"><h4>${v?v.name:'Sin asignar'} ${lockIcon}</h4><span>SIM: ${d.sim} | ${d.online?'En línea':'Offline'}${d.relayFailed?' | ⚠️ Relay falló':''}</span></div><div class="vehicle-speed"><div class="speed-val">${d.speed}</div><div class="speed-unit">KM/H</div></div></div>`;
+    }).join('');
+}
+
+function renderUsers(){
+    const tbody=document.getElementById('usersTableBody');if(!tbody)return;
+    tbody.innerHTML=data.users.map(u=>`<tr><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white">${u.name[0]}${u.lastName[0]}</div><div style="font-weight:600;color:var(--text-primary)">${u.name} ${u.lastName}</div></div></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)">${u.email}</td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><span style="font-weight:600;color:var(--text-primary)">${u.role}</span></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div class="action-btns"><button class="action-btn" title="Editar" onclick="openUserModal(${u.id})"><i class="fas fa-pen"></i></button><button class="action-btn delete" title="Eliminar" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></div></td></tr>`).join('');
+}
+
+function renderDevices(){
+    const grid=document.getElementById('deviceGrid');if(!grid)return;
+    grid.innerHTML=data.devices.map(d=>{
+        const vehicle=data.vehicles.find(v=>v.id===d.vehicleId);
+        const engineHtml=d.relayFailed?'<span class="status-badge not-blocked"><i class="fas fa-exclamation-triangle"></i> Relay Falló</span>':(d.engineLocked?'<span class="status-badge locked"><i class="fas fa-lock"></i> Comando Enviado</span>':'<span class="status-badge online"><i class="fas fa-lock-open"></i> Habilitado</span>');
+        const lastSMSHtml=d.lastSMS?`<div style="font-size:10px;color:var(--accent-light);font-family:monospace;margin-top:6px">📱 Último SMS: ${d.lastSMS}</div>`:'';
+        return`<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,rgba(26,115,232,0.15),rgba(79,195,247,0.1));display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent)"><i class="fas fa-satellite-dish"></i></div><div><h4 style="font-size:14px;font-weight:700;margin-bottom:3px">${vehicle?vehicle.name:'Sin asignar'}</h4><div style="font-size:10px;color:var(--text-muted);font-family:monospace">IMEI: ${d.imei}</div></div></div><span class="status-badge ${d.online?'online':'offline'}">${d.online?'Online':'Offline'}</span></div><div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${engineHtml}<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(139,92,246,0.15);color:#a78bfa;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700"><i class="fas fa-microchip"></i>TK303</span></div><div style="font-size:10px;color:var(--text-muted);margin-bottom:8px"><i class="fas fa-mobile-alt"></i> SIM: <strong style="color:var(--text-primary);font-family:monospace">${d.sim}</strong></div>${lastSMSHtml}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid var(--border)"><div><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;font-weight:600">Velocidad</div><div style="font-size:12px;font-weight:600">${d.speed} km/h</div></div><div><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;font-weight:600">Batería</div><div style="font-size:12px;font-weight:600">${d.battery}%</div></div></div><div style="display:flex;justify-content:flex-end;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><button class="btn btn-sm btn-secondary" onclick="openDeviceModal(${d.id})"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-danger" onclick="deleteDevice(${d.id})"><i class="fas fa-trash"></i></button></div></div>`;
+    }).join('');
+}
+
+function renderVehicles(){
+    const tbody=document.getElementById('vehiclesTableBody');if(!tbody)return;
+    tbody.innerHTML=data.vehicles.map(v=>{
+        const device=data.devices.find(d=>d.id===v.deviceId);
+        const deviceHtml=device?`<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(139,92,246,0.15);color:#a78bfa;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700">TK303</span><br><span style="font-size:9px;font-family:monospace;color:var(--text-muted)">SIM: ${device.sim}</span>`:'<span style="color:var(--accent3);font-size:11px"><i class="fas fa-exclamation"></i> Sin GPS</span>';
+        const engineHtml=device?(device.relayFailed?'<span class="status-badge not-blocked"><i class="fas fa-exclamation-triangle"></i> Relay Falló</span>':(device.engineLocked?'<span class="status-badge locked"><i class="fas fa-lock"></i> Bloqueado</span>':'<span class="status-badge online"><i class="fas fa-lock-open"></i> Habilitado</span>')):'<span style="color:var(--text-muted);font-size:10px">N/A</span>';
+        return`<tr><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:rgba(26,115,232,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent)"><i class="fas fa-${v.type==='Camión'?'truck':'car'}"></i></div><div><div style="font-weight:600;color:var(--text-primary)">${v.name}</div><div style="font-size:10px;color:var(--text-muted)">${v.brand} ${v.model}</div></div></div></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><span style="font-weight:700;font-family:monospace">${v.plate}</span></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)">${deviceHtml}</td><td style="padding:12px 18px;border-bottom:1px solid var(--border)">${engineHtml}</td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div class="action-btns"><button class="action-btn" title="Editar" onclick="openVehicleModal(${v.id})"><i class="fas fa-pen"></i></button><button class="action-btn delete" title="Eliminar" onclick="deleteVehicle(${v.id})"><i class="fas fa-trash"></i></button></div></td></tr>`;
+    }).join('');
+}
+
+function renderAssignments(){
+    const tbody=document.getElementById('assignmentsTableBody');if(!tbody)return;
+    const assigned=data.devices.filter(d=>d.vehicleId);
+    if(assigned.length===0){tbody.innerHTML=`<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted)">Sin asignaciones</td></tr>`;return}
+    tbody.innerHTML=assigned.map(d=>{
+        const v=data.vehicles.find(x=>x.id===d.vehicleId);
+        const assignedUser=data.users.find(u=>u.assignedVehicles&&u.assignedVehicles.includes(d.vehicleId));
+        const engineHtml=d.relayFailed?'<span class="status-badge not-blocked"><i class="fas fa-exclamation-triangle"></i> Relay Falló</span>':(d.engineLocked?'<span class="status-badge locked"><i class="fas fa-lock"></i> Bloqueado</span>':'<span class="status-badge online"><i class="fas fa-lock-open"></i> Habilitado</span>');
+        return`<tr><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:rgba(139,92,246,0.15);display:flex;align-items:center;justify-content:center;color:#a78bfa"><i class="fas fa-microchip"></i></div><div><div style="font-weight:600;color:var(--text-primary);font-family:monospace;font-size:11px">${d.imei}</div><div style="font-size:9px;color:var(--text-muted)">SIM: ${d.sim}</div></div></div></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div style="font-weight:600;color:var(--text-primary)">${v?v.name:'?'}</div></td><td style="padding:12px 18px;border-bottom:1px solid var(--border)">${assignedUser?`<span style="font-weight:600;color:var(--accent-light)">${assignedUser.name} ${assignedUser.lastName}</span>`:'<span style="color:var(--accent3);font-size:11px">Sin usuario</span>'}</td><td style="padding:12px 18px;border-bottom:1px solid var(--border)">${engineHtml}</td><td style="padding:12px 18px;border-bottom:1px solid var(--border)"><div class="action-btns"><button class="action-btn delete" title="Remover" onclick="unassignDevice(${d.id})"><i class="fas fa-unlink"></i></button></div></td></tr>`;
+    }).join('');
+}
+
+function simulateLiveData(){
+    data.devices.forEach(d=>{
+        if(d.online&&(d.relayFailed||!d.engineLocked)){
+            d.lat+=(Math.random()-0.5)*0.001;d.lng+=(Math.random()-0.5)*0.001;
+            d.speed=Math.max(0,d.speed+Math.floor((Math.random()-0.5)*10));
+            d.battery=Math.max(5,d.battery-Math.random()*0.1);
+        }else if(d.engineLocked&&!d.relayFailed){d.speed=0;}
+    });
+    updateMapMarkers();renderVehicleList();renderStats();
+}
+
+loadData();
+function checkResponsive(){const btn=document.getElementById('menuBtn');btn.style.display=window.innerWidth<=768?'flex':'none'}
+window.addEventListener('resize',checkResponsive);checkResponsive();
+setInterval(simulateLiveData,3000);
+</script>
+</body>
+</html>
